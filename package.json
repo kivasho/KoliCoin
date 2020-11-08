@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/kivasho/KoliCoin#readme",
   "dependencies": {
+    "crypto-js": "^4.0.0",
     "crypto.js": "^2.0.2"
   }
 }
