@@ -1,41 +1,118 @@
-const SHA256 = require('crypto-js/sha256');
-class Block{
-    constructor(index, timestamp, data, previousHash = ''){
-        this.index = index;
-        this.timestamp = timestamp;
-        this.data = data;
-        this.previousHash = previousHash;
-        this.hash = this.calculateHash(); 
-    }
-    calculateHash(){
-        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)).toString();
+const SHA256 = require('crypto-js/sha256')
+
+class Transaction {
+    constructor(fromAddress, toAddress, amount) {
+        this.fromAddress = fromAddress
+        this.toAddress = toAddress
+        this.amount = amount
     }
 }
 
-class Blockchain{
-    constructor(){
-        this.chain = [this.createGenesis()];
+class Block {
 
+    constructor(timestamp, transactions, previousHash = '') {
+        this.timestamp = timestamp
+        this.transactions = transactions
+        this.previousHash = previousHash
+        this.hash = this.calculateHash()
+        this.nonce = 0
     }
 
-    createGenesis(){
-        return new Block(0, "07/09/2020", "Genesis Block", "0");
+    calculateHash() {
+        return SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString()
     }
 
-    getLastestBlock(){
-        return this.chain[this.chain.lenght -1];
+    mineBlock(difficulty) {
+        while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
+            this.nonce++
+            this.hash = this.calculateHash()
+        }
+        console.log('Block mined: ' + this.hash)
     }
 
-    addBlock(newBlock){
-       newBlock.previousHash = this.getLastestBlock().hash; 
-       newBlock.hash = newBlock.calculateHash();
-       this.chain.push(newBlock);
-    }
 }
 
-let KoliCoin = new Blockchain();
-KoliCoin.addBlock(new Block(1, "07/09/2020", { ammount: 4 }));
-KoliCoin.addBlock(new Block(2, "08/09/2020", { ammount: 10 }));
+class BlockChain {
 
-console.log(JSON.stringify(KoliCoin, null, 4));
+    constructor() {
+        this.chain = [this.createGenesisBlock()]
+        this.difficulty = 4
+        this.pendingTransactions = []
+        this.miningReward = 100
+    }
 
+    createGenesisBlock() {
+        return new Block('01/01/2018', 'Genesis Block', '0')
+    }
+
+    getLatestBlock() {
+        return this.chain[this.chain.length - 1]
+    }
+
+    minePendingTransactions(miningRewardAddress) {
+        let block = new Block(Date.now(), this.pendingTransactions)
+        block.previousHash = this.getLatestBlock().hash
+        block.mineBlock(this.difficulty)
+
+        console.log('Block successfully mined')
+        this.chain.push(block)
+
+        this.pendingTransactions = [
+            new Transaction(null, miningRewardAddress, this.miningReward)
+        ]
+    }
+
+    createTransaction(transaction) {
+        this.pendingTransactions.push(transaction)
+    }
+
+    getBalanceOfAddress(address) {
+        let balance = 0
+        for (const block of this.chain) {
+            for (const trans of block.transactions) {
+                if (trans.fromAddress === address) {
+                    balance -= trans.amount
+                }
+
+                if (trans.toAddress === address) {
+                    balance += trans.amount
+                }
+            }
+        }
+        return balance
+    }
+
+    isChainValid() {
+        for (let i = 1; i < this.chain.length; i++) {
+            const currentBlock = this.chain[i]
+            const previousBlock = this.chain[i - 1]
+
+            // El hash del bloque no es válido
+            if (currentBlock.hash != currentBlock.calculateHash()) {
+                return false
+            }
+
+            // Comprobamos si apunta al anterior
+            if (currentBlock.previousHash !== previousBlock.hash) {
+                return false
+            }
+        }
+        return true
+    }
+
+}
+
+let KoliCoin = new BlockChain()
+
+KoliCoin.createTransaction(new Transaction('address1', 'address2', 100))
+KoliCoin.createTransaction(new Transaction('address2', 'address1', 50))
+
+console.log('\nMining started')
+KoliCoin.minePendingTransactions('mario-address')
+
+console.log('Balance of Mario is ', KoliCoin.getBalanceOfAddress('mario-address'))
+
+console.log('\nMining started')
+KoliCoin.minePendingTransactions('mario-address')
+
+console.log('Balance of Mario is ', KoliCoin.getBalanceOfAddress('mario-address'))
