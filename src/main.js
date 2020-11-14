@@ -108,11 +108,11 @@ KoliCoin.createTransaction(new Transaction('address1', 'address2', 100))
 KoliCoin.createTransaction(new Transaction('address2', 'address1', 50))
 
 console.log('\nMining started')
-KoliCoin.minePendingTransactions('mario-address')
+KoliCoin.minePendingTransactions('kivashos-address')
 
-console.log('Balance of Mario is ', KoliCoin.getBalanceOfAddress('mario-address'))
+console.log('Balance of kivasho is ', KoliCoin.getBalanceOfAddress('kivashos-address'))
 
 console.log('\nMining started')
-KoliCoin.minePendingTransactions('mario-address')
+KoliCoin.minePendingTransactions('kivashos-address')
 
-console.log('Balance of Mario is ', KoliCoin.getBalanceOfAddress('mario-address'))
+console.log('Balance of kivasho is ', KoliCoin.getBalanceOfAddress('kivashos-address'))
