@@ -1,118 +1,22 @@
-const SHA256 = require('crypto-js/sha256')
+const {BlockChain, Transaction} = require('./blockchain')
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1');
 
-class Transaction {
-    constructor(fromAddress, toAddress, amount) {
-        this.fromAddress = fromAddress
-        this.toAddress = toAddress
-        this.amount = amount
-    }
-}
+const myKey = ec.keyFromPrivate('34562adb6d6d71b1aa8f3bb55d9c548d306cc4464ab722526369ec9b8037b084');
+const myWalletAdress = myKey.getPublic('hex')
 
-class Block {
+let KoliCoin = new BlockChain();
 
-    constructor(timestamp, transactions, previousHash = '') {
-        this.timestamp = timestamp
-        this.transactions = transactions
-        this.previousHash = previousHash
-        this.hash = this.calculateHash()
-        this.nonce = 0
-    }
+const tx1 = new Transaction(myWalletAdress, 'public key goes here', 10);
+tx1.signTransaction(myKey);
+KoliCoin.addTransaction(tx1);
 
-    calculateHash() {
-        return SHA256(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString()
-    }
 
-    mineBlock(difficulty) {
-        while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
-            this.nonce++
-            this.hash = this.calculateHash()
-        }
-        console.log('Block mined: ' + this.hash)
-    }
+console.log('\nMining started...');
+KoliCoin.minePendingTransactions(myWalletAdress);
+console.log('Balance of kivasho is ', KoliCoin.getBalanceOfAddress(myWalletAdress))
 
-}
+//KoliCoin.chain[1].transactions[0].amount = 1;
 
-class BlockChain {
+console.log('Is chain valid? ', KoliCoin.isChainValid());
 
-    constructor() {
-        this.chain = [this.createGenesisBlock()]
-        this.difficulty = 4
-        this.pendingTransactions = []
-        this.miningReward = 100
-    }
-
-    createGenesisBlock() {
-        return new Block('01/01/2018', 'Genesis Block', '0')
-    }
-
-    getLatestBlock() {
-        return this.chain[this.chain.length - 1]
-    }
-
-    minePendingTransactions(miningRewardAddress) {
-        let block = new Block(Date.now(), this.pendingTransactions)
-        block.previousHash = this.getLatestBlock().hash
-        block.mineBlock(this.difficulty)
-
-        console.log('Block successfully mined')
-        this.chain.push(block)
-
-        this.pendingTransactions = [
-            new Transaction(null, miningRewardAddress, this.miningReward)
-        ]
-    }
-
-    createTransaction(transaction) {
-        this.pendingTransactions.push(transaction)
-    }
-
-    getBalanceOfAddress(address) {
-        let balance = 0
-        for (const block of this.chain) {
-            for (const trans of block.transactions) {
-                if (trans.fromAddress === address) {
-                    balance -= trans.amount
-                }
-
-                if (trans.toAddress === address) {
-                    balance += trans.amount
-                }
-            }
-        }
-        return balance
-    }
-
-    isChainValid() {
-        for (let i = 1; i < this.chain.length; i++) {
-            const currentBlock = this.chain[i]
-            const previousBlock = this.chain[i - 1]
-
-            // El hash del bloque no es válido
-            if (currentBlock.hash != currentBlock.calculateHash()) {
-                return false
-            }
-
-            // Comprobamos si apunta al anterior
-            if (currentBlock.previousHash !== previousBlock.hash) {
-                return false
-            }
-        }
-        return true
-    }
-
-}
-
-let KoliCoin = new BlockChain()
-
-KoliCoin.createTransaction(new Transaction('address1', 'address2', 100))
-KoliCoin.createTransaction(new Transaction('address2', 'address1', 50))
-
-console.log('\nMining started')
-KoliCoin.minePendingTransactions('kivashos-address')
-
-console.log('Balance of kivasho is ', KoliCoin.getBalanceOfAddress('kivashos-address'))
-
-console.log('\nMining started')
-KoliCoin.minePendingTransactions('kivashos-address')
-
-console.log('Balance of kivasho is ', KoliCoin.getBalanceOfAddress('kivashos-address'))
